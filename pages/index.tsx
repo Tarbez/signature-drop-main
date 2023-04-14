@@ -4,40 +4,43 @@ import {
   useContractWrite,
   Web3Button,
 } from "@thirdweb-dev/react";
-import { SignedPayload721WithQuantitySignature } from "@thirdweb-dev/sdk";
-import type { NextPage } from "next";
 import styles from "../styles/Home.module.css";
 import Image from "next/image";
 import { useState } from "react";
-export const contractAddress = "0xb5201E87b17527722A641Ac64097Ece34B21d10A";
-const Home: NextPage = () => {
-  const [isLoading, setIsLoading] = useState(false);
+
+const Home = () => {
+  const address = useAddress();
   const { contract } = useContract(
     "0x34EE45b17Bc7821D26eF4F7656bF344bBF152D8C"
   );
-  const { mutateAsync: mintWithSignature } = useContractWrite(
+  const [img, setImg] = useState(null);
+  const { mutateAsync: mintWithSignature, isLoading } = useContractWrite(
     contract,
     "mintWithSignature"
   );
-  const address = useAddress();
+
   const handleClaimWithSignature = async () => {
-    setIsLoading(true);
     try {
-      const body = JSON.stringify({ address: address });
-      console.log(body); // log the request body
       const req = await fetch("/api/generate-mint-signature", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: body,
+        body: JSON.stringify({
+          address,
+          name: "Name NFT ",
+          description: "NFT Description",
+          image: "img",
+        }),
       });
-      const res = await req.json();
-      console.log(res);
-    } catch (err) {}
-    setIsLoading(false);
-  };
+      const signedPayload = (await req.json()).signedPayload;
 
+      // Use the mintWithSignature function returned from useContractWrite
+      await mintWithSignature(signedPayload);
+    } catch (err) {
+      console.error(err);
+    }
+  };
   return (
     <div className={styles.container}>
       {/* Top Section */}
@@ -91,7 +94,7 @@ const Home: NextPage = () => {
           </p>
 
           <Web3Button
-            contractAddress={contractAddress}
+            contractAddress="0x34EE45b17Bc7821D26eF4F7656bF344bBF152D8C"
             action={() => handleClaimWithSignature()}
             theme="dark"
           >
